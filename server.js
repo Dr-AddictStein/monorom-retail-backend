@@ -74,6 +74,10 @@ const __dirname = path.dirname(__filename);
 // Serve static files from the "uploads" directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+app.get("/", (req, res) => {
+  res.status(200).json({ status: "ok", message: "Monorom API is running" });
+});
+
 //file
 app.use("/api/file",fileRoutes);
 
