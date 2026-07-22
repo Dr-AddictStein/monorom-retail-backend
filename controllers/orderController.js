@@ -3,12 +3,9 @@ import productModel from '../models/productModel.js';
 import cartModel from "../models/cartModel.js";
 import orderModel from "../models/orderModel.js";
 import categoryModel from "../models/categoryModel.js";
-import subCategoryModel from "../models/subCategoryModel.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import category from "../models/categoryModel.js";
-import subCategory from "../models/subCategoryModel.js";
 
 
 export const createOrder = async (req, res) => {

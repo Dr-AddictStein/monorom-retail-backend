@@ -1,12 +1,12 @@
 import express from 'express';
-import { bulkUpdate, createProduct, deleteProduct, getAllProduct, getProductsBySubCategoryId, getSingleProduct, updateProduct } from '../controllers/productController.js';
+import { bulkUpdate, createProduct, deleteProduct, getAllProduct, getProductsByCategoryId, getSingleProduct, updateProduct } from '../controllers/productController.js';
 
 const router=express.Router();
 
 //get
 router.get('/',getAllProduct);
+router.get('/getProductsByCategoryId/:id',getProductsByCategoryId);
 router.get('/:id',getSingleProduct);
-router.get('/getProductsBySubCategoryId/:id',getProductsBySubCategoryId);
 
 //post
 router.post('/',createProduct);

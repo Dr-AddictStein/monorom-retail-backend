@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import categoryModel from "../models/categoryModel.js";
-import subCategoryModel from "../models/subCategoryModel.js";
+import productModel from "../models/productModel.js";
 
 export const getAllCategory = async (req, res) => {
   const categories = await categoryModel.find({});
@@ -25,12 +25,11 @@ export const createCategory = async (req, res) => {
     let data={
       ...req.body,
     };
-    // data.remquestion=req.body.totalquestion;
     const newCategory = new categoryModel(data);
     const savedCategory = await newCategory.save();
     res.status(201).json(savedCategory);
   } catch (error) {
-    console.error('Error saving category:', error); // Log the error details
+    console.error('Error saving category:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -67,18 +66,18 @@ export const deleteCategory = async (req, res) => {
 
 
 export const homePageData = async(req,res)=>{
-  let dex=[];
   const categories = await categoryModel.find({});
-  dex=categories;
-  let toSend = dex.map(item => ({
-    ...item,
-    subCategoriesData: [] // You can initialize this with an empty array or any desired value
-  }));
-  for(let i=0;i<dex.length;i++){
-    for(let j=0;j<dex[i].subCategories.length;j++){
-      let dat=await subCategoryModel.findById(dex[i].subCategories[j]);
-      toSend[i].subCategoriesData.push(dat);
-    }
-  }
+  const toSend = await Promise.all(
+    categories.map(async (category) => {
+      const products = await productModel
+        .find({ category: category._id.toString() })
+        .sort({ createdAt: -1 })
+        .limit(12);
+      return {
+        ...category.toObject(),
+        productsData: products,
+      };
+    })
+  );
   res.status(200).json(toSend);
 }

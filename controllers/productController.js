@@ -18,15 +18,15 @@ export const getSingleProduct = async (req, res) => {
     return res.status(400).json({ error: "No Such Product Found.!." });
   }
 };
-export const getProductsBySubCategoryId = async (req, res) => {
+export const getProductsByCategoryId = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "Invalid ID.!." });
   }
-  const product = await productModel.find({ subCategory: id });
+  const products = await productModel.find({ category: id });
 
-  if (product) {
-    res.status(200).json(product);
+  if (products) {
+    res.status(200).json(products);
   } else {
     return res.status(400).json({ error: "No Such Product Found.!." });
   }

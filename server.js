@@ -7,8 +7,6 @@ import { fileURLToPath } from 'url';
 import fileRoutes from './routes/fileRoutes.js';
 import userRoutes from "./routes/userRoutes.js";
 import categoryRoutes from './routes/categoryRoutes.js';
-import subCategoryRoutes from './routes/subCategoryRoutes.js';
-import subSubCategoryRoutes from './routes/subSubCategoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -36,6 +34,40 @@ app.use((req, res, next) => {
   next();
 });
 
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    cached.promise = mongoose
+      .connect(process.env.MONGO_URI)
+      .then((mongooseInstance) => {
+        console.log("Successfully Connected to DB");
+        return mongooseInstance;
+      });
+  }
+
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
+
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("MongoDB connection error:", error);
+    res.status(500).json({ error: "Database connection failed" });
+  }
+});
+
 // Get the current directory name
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,12 +84,6 @@ app.use("/api/user", userRoutes);
 
 // category
 app.use("/api/category",categoryRoutes);
-
-// subCategory
-app.use("/api/subCategory",subCategoryRoutes);
-
-// subSubCategory
-app.use("/api/subSubCategory",subSubCategoryRoutes);
 
 // product
 app.use("/api/product",productRoutes);
@@ -108,16 +134,17 @@ app.post("/api/test-sms", async (req, res) => {
 
 
 
-
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => {
-    // listen for request
-    console.log("Successfully Connected to DB");
-    app.listen(process.env.PORT, () => {
-      console.log(`Listening on PORT ${process.env.PORT}`);
+// Local development only — Vercel runs this as a serverless function
+if (!process.env.VERCEL) {
+  connectDB()
+    .then(() => {
+      app.listen(process.env.PORT, () => {
+        console.log(`Listening on PORT ${process.env.PORT}`);
+      });
+    })
+    .catch((error) => {
+      console.log(error);
     });
-  })
-  .catch((error) => {
-    console.log(error);
-  });
+}
+
+export default app;

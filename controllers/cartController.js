@@ -2,12 +2,9 @@ import userModel from "../models/userModel.js";
 import productModel from '../models/productModel.js';
 import cartModel from "../models/cartModel.js";
 import categoryModel from "../models/categoryModel.js";
-import subCategoryModel from "../models/subCategoryModel.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import category from "../models/categoryModel.js";
-import subCategory from "../models/subCategoryModel.js";
 
 
 export const addToCart = async (req, res) => {
@@ -36,8 +33,7 @@ export const getCartByUserId = async (req, res) => {
     const product = await productModel.findById(cart[i].productId);
 
     const cat = await categoryModel.findById(product.category);
-    const scat = await subCategoryModel.findById(product.subCategory);
-    
+
     let productPrice = product.priceFC;
     if(user.userView==="BC"){
       productPrice=product.priceBC;
@@ -57,8 +53,7 @@ export const getCartByUserId = async (req, res) => {
       productId: product._id,
       name: product.name,
       image: product.productThumbnail,
-      category: cat.name || "",
-      subCategory: scat.name || "",
+      category: cat?.name || "",
       price: productPrice,
       qty: cart[i].qty,
       totalPrice: productPrice * cart[i].qty

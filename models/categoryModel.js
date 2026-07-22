@@ -12,10 +12,7 @@ const categorySchema = new mongoose.Schema({
     },
     categoryThumbnail:{
         type: String
-    },
-    subCategories:[{
-        type: String
-    }]
+    }
 },{timestamps:true});
 
 

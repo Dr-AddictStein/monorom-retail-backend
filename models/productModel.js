@@ -13,12 +13,6 @@ const productSchema = new mongoose.Schema({
     galleryImages:[{
         type:String
     }],
-    subSubCategory:{
-        type: String
-    },
-    subCategory:{
-        type: String
-    },
     category:{
         type: String
     },
