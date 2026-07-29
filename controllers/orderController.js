@@ -9,24 +9,40 @@ import bcrypt from "bcrypt";
 
 
 export const createOrder = async (req, res) => {
-    const data = {
-        ...req.body
-    };
+    try {
+        const data = {
+            ...req.body
+        };
 
-    const newOrder = new orderModel(data);
-    const savedOrder = await newOrder.save();
-    const cart = await cartModel.find({ userId: req.body.userId });
-    for (let i = 0; i < data.cartData.length; i++) {
-        const prod = await productModel.findById(data.cartData[i].productId);
-        await productModel.findByIdAndUpdate({ _id: prod._id }, { stock: prod.stock - data.cartData[i].qty, orderCount: prod.orderCount + 1 });
+        const newOrder = new orderModel(data);
+        const savedOrder = await newOrder.save();
+
+        for (let i = 0; i < (data.cartData || []).length; i++) {
+            const prod = await productModel.findById(data.cartData[i].productId);
+            if (!prod) continue;
+            await productModel.findByIdAndUpdate(
+                { _id: prod._id },
+                {
+                    stock: Math.max(0, prod.stock - data.cartData[i].qty),
+                    orderCount: (prod.orderCount || 0) + 1,
+                }
+            );
+        }
+
+        // Only clear server-side cart when a real logged-in userId exists
+        if (req.body.userId && req.body.userId !== "guest") {
+            const cart = await cartModel.find({ userId: req.body.userId });
+            let cnt = cart.length;
+            while (cnt--) {
+                await cartModel.findOneAndDelete({ userId: req.body.userId });
+            }
+        }
+
+        return res.status(200).json(savedOrder);
+    } catch (error) {
+        console.error("Error creating order:", error);
+        return res.status(500).json({ message: error.message });
     }
-    let cnt = cart.length;
-    while (cnt--) {
-        await cartModel.findOneAndDelete({ userId: req.body.userId });
-    }
-
-    return res.status(200).json(savedOrder);
-
 }
 
 export const getAllReceivedOrders = async (req, res) => {
@@ -46,18 +62,23 @@ export const myOrders = async (req, res) => {
 export const getOrderDetailsByAdmin = async (req, res) => {
     const { id } = req.params;
     const order = await orderModel.findById(id);
-    const userData = await userModel.findById(order.userId);
+    if (!order) {
+        return res.status(404).json({ error: "Order not found" });
+    }
 
-    let uv = userData ? userData.userView : "FC";
-    let tpr = 0;
-
-    let dex = order.cartData;
-
+    let userData = null;
+    if (order.userId && order.userId !== "guest" && mongoose.Types.ObjectId.isValid(order.userId)) {
+        userData = await userModel.findById(order.userId);
+    }
 
     const data = {
-        userName: userData ? userData.firstName + " " + userData.lastName : "UNKNOWN",
+        userName: order.name
+            ? order.name
+            : userData
+              ? userData.firstName + " " + userData.lastName
+              : "Guest",
         companyName: (order.companyName) ? order.companyName : "",
-        city: userData ? userData.city : "UNKNOWN",
+        city: userData ? userData.city : "",
         phone: order.phone,
         email: order.email,
         shippingAddress: order.address,
