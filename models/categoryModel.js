@@ -1,20 +1,29 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
-const categorySchema = new mongoose.Schema({
-    name:{
-        type: String
+const categorySchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
     },
-    slogan:{
-        type: String
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
     },
-    bannerImage:{
-        type:String
+    slogan: {
+      type: String,
     },
-    categoryThumbnail:{
-        type: String
-    }
-},{timestamps:true});
-
+    bannerImage: {
+      type: String,
+    },
+    categoryThumbnail: {
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
 
 const category = mongoose.model("CategoryCollection", categorySchema);
 

@@ -1,69 +1,70 @@
-import mongoose, { Mongoose } from "mongoose";
+import mongoose from "mongoose";
 
-const productSchema = new mongoose.Schema({
-    name:{
-        type: String
+const productSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
     },
-    bannerImage:{
-        type:String
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      lowercase: true,
     },
-    productThumbnail:{
-        type: String
+    bannerImage: {
+      type: String,
     },
-    galleryImages:[{
-        type:String
-    }],
-    category:{
-        type: String
+    productThumbnail: {
+      type: String,
     },
-    price:{
-        type: Number
-    }, 
-    priceBC:{
-        type: Number
-    }, 
-    priceMC:{
-        type: Number
-    }, 
-    priceSC:{
-        type: Number
-    }, 
-    priceFC:{
-        type: Number
-    }, 
-    specialLines:[{
-        type: String 
-    }],
-    productCode:{
-        type:String
+    galleryImages: [
+      {
+        type: String,
+      },
+    ],
+    category: {
+      type: String,
     },
-    youtubeURL:{
-        type:String
+    price: {
+      type: Number,
     },
-    desc:{
-        type:String
+    specialLines: [
+      {
+        type: String,
+      },
+    ],
+    productCode: {
+      type: String,
     },
-    stock:{
-        type:Number
+    youtubeURL: {
+      type: String,
     },
-    panicStock:{
-        type:Number
+    desc: {
+      type: String,
     },
-    hasOffer:{
-        type:Boolean
+    stock: {
+      type: Number,
     },
-    offerTill:{
-        type: String
+    panicStock: {
+      type: Number,
     },
-    offerPanicStarts:{
-        type: String
+    hasOffer: {
+      type: Boolean,
     },
-    orderCount:{
-        type:Number,
-        default:0
-    }
-},{timestamps:true});
-
+    offerTill: {
+      type: String,
+    },
+    offerPanicStarts: {
+      type: String,
+    },
+    orderCount: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { timestamps: true }
+);
 
 const product = mongoose.model("ProductCollection", productSchema);
 

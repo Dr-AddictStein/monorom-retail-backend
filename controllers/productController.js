@@ -1,16 +1,23 @@
 import mongoose from "mongoose";
 import productModel from "../models/productModel.js";
+import { ensureUniqueSlug, slugify } from "../utils/slugify.js";
+
+const findProductBySlugOrId = async (param) => {
+  if (mongoose.Types.ObjectId.isValid(param)) {
+    const byId = await productModel.findById(param);
+    if (byId) return byId;
+  }
+  return productModel.findOne({ slug: String(param).toLowerCase() });
+};
 
 export const getAllProduct = async (req, res) => {
   const products = await productModel.find({}).sort({ createdAt: -1 });
   res.status(200).json(products);
 };
+
 export const getSingleProduct = async (req, res) => {
   const { id } = req.params;
-  if (!mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(404).json({ error: "Invalid ID.!." });
-  }
-  const product = await productModel.findById(id);
+  const product = await findProductBySlugOrId(id);
 
   if (product) {
     res.status(200).json(product);
@@ -18,6 +25,7 @@ export const getSingleProduct = async (req, res) => {
     return res.status(400).json({ error: "No Such Product Found.!." });
   }
 };
+
 export const getProductsByCategoryId = async (req, res) => {
   const { id } = req.params;
   if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -33,17 +41,19 @@ export const getProductsByCategoryId = async (req, res) => {
 };
 
 export const createProduct = async (req, res) => {
-
   try {
-    let data = {
+    const productCode = req.body.productCode;
+    const baseSlug = slugify(productCode) || slugify(req.body.name) || "product";
+    const slug = await ensureUniqueSlug(productModel, baseSlug);
+
+    const newProduct = new productModel({
       ...req.body,
-    };
-    // data.remquestion=req.body.totalquestion;
-    const newProduct = new productModel(data);
+      slug,
+    });
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (error) {
-    console.error('Error saving product:', error); // Log the error details
+    console.error("Error saving product:", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -53,13 +63,32 @@ export const updateProduct = async (req, res) => {
   if (!mongoose.Types.ObjectId.isValid(id)) {
     return res.status(404).json({ error: "Invalid ID.!." });
   }
-  const product = await productModel.findOneAndUpdate({ _id: id }, { ...req.body });
 
-  if (product) {
-    const toSend = await productModel.findById(id);
-    res.status(200).json(toSend);
-  } else {
-    return res.status(400).json({ error: "No Such Product Found.!." });
+  try {
+    const updates = { ...req.body };
+
+    if (updates.productCode != null) {
+      const baseSlug =
+        slugify(updates.productCode) ||
+        slugify(updates.name) ||
+        "product";
+      updates.slug = await ensureUniqueSlug(productModel, baseSlug, id);
+    }
+
+    const product = await productModel.findOneAndUpdate(
+      { _id: id },
+      updates,
+      { new: true }
+    );
+
+    if (product) {
+      res.status(200).json(product);
+    } else {
+      return res.status(400).json({ error: "No Such Product Found.!." });
+    }
+  } catch (error) {
+    console.error("Error updating product:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -78,16 +107,11 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-
 export const bulkUpdate = async (req, res) => {
-
   const ids = req.body.productIds;
   for (let i = 0; i < ids.length; i++) {
     let dex = await productModel.findById(ids[i]);
-    dex.priceBC = req.body.priceBC;
-    dex.priceMC = req.body.priceMC;
-    dex.priceSC = req.body.priceSC;
-    dex.priceFC = req.body.priceFC;
+    dex.price = req.body.price;
     dex.stock = req.body.stock;
     await productModel.findByIdAndUpdate({ _id: ids[i] }, { ...dex });
   }

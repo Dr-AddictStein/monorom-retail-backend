@@ -34,19 +34,13 @@ export const getCartByUserId = async (req, res) => {
 
     const cat = await categoryModel.findById(product.category);
 
-    let productPrice = product.priceFC;
-    if(user.userView==="BC"){
-      productPrice=product.priceBC;
-    }
-    else if(user.userView==="MC"){
-      productPrice=product.priceMC;
-    }
-    else if(user.userView==="SC"){
-      productPrice=product.priceSC;
-    }
-    else if(user.userView==="FC"){
-      productPrice=product.priceFC;
-    }
+    const productPrice =
+      product.price ??
+      product.priceFC ??
+      product.priceSC ??
+      product.priceMC ??
+      product.priceBC ??
+      0;
 
     let dat = {
       cartId: cart[i]._id,
