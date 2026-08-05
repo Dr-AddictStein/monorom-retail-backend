@@ -21,6 +21,18 @@ const categorySchema = new mongoose.Schema(
     categoryThumbnail: {
       type: String,
     },
+    seoTitle: {
+      type: String,
+    },
+    seoDescription: {
+      type: String,
+    },
+    seoKeywords: {
+      type: String,
+    },
+    seoFocusKeyword: {
+      type: String,
+    },
   },
   { timestamps: true }
 );

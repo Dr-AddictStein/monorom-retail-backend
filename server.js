@@ -13,6 +13,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import siteDataRoutes from './routes/siteDataRoutes.js';
 import pushNotificationRoutes from './routes/pushNotificationRoutes.js';
 import seedRoutes from './routes/seedRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 import { sendBdBulkSms } from './services/smsService.js';
 
 
@@ -91,6 +92,9 @@ app.use("/api/category",categoryRoutes);
 
 // product
 app.use("/api/product",productRoutes);
+
+// AI (SEO generation, etc.)
+app.use("/api/ai", aiRoutes);
 
 // cart
 app.use("/api/cart",cartRoutes);

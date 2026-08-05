@@ -43,6 +43,18 @@ const productSchema = new mongoose.Schema(
     desc: {
       type: String,
     },
+    seoTitle: {
+      type: String,
+    },
+    seoDescription: {
+      type: String,
+    },
+    seoKeywords: {
+      type: String,
+    },
+    seoFocusKeyword: {
+      type: String,
+    },
     stock: {
       type: Number,
     },

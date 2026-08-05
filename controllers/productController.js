@@ -42,8 +42,8 @@ export const getProductsByCategoryId = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const productCode = req.body.productCode;
-    const baseSlug = slugify(productCode) || slugify(req.body.name) || "product";
+    const baseSlug =
+      slugify(req.body.slug) || slugify(req.body.name) || "product";
     const slug = await ensureUniqueSlug(productModel, baseSlug);
 
     const newProduct = new productModel({
@@ -67,9 +67,9 @@ export const updateProduct = async (req, res) => {
   try {
     const updates = { ...req.body };
 
-    if (updates.productCode != null) {
+    if (updates.slug != null || updates.name != null) {
       const baseSlug =
-        slugify(updates.productCode) ||
+        slugify(updates.slug) ||
         slugify(updates.name) ||
         "product";
       updates.slug = await ensureUniqueSlug(productModel, baseSlug, id);
