@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { sendBdBulkSms } from "../services/smsService.js";
 import { phoneAsEntered, isUsablePhoneForOtp } from "../utils/phone.js";
+import { composeAddress } from "../utils/address.js";
 
 /** Login/session JWT. Default is long-lived so mobile/web stay signed in until logout; override with JWT_EXPIRES_IN (e.g. 90d, 365d). */
 const createToken = (_id) => {
@@ -548,6 +549,9 @@ export const singupUser = async (req, res) => {
     pin,
     city,
     shippingAddress,
+    homeAddress,
+    thana,
+    district,
     companyName,
     dob,
     phoneVerificationToken,
@@ -588,7 +592,10 @@ export const singupUser = async (req, res) => {
       city,
       shippingAddress,
       companyName,
-      dob
+      dob,
+      homeAddress,
+      thana,
+      district
     );
 
     const token = createToken(user._id);
@@ -690,6 +697,9 @@ export const signupAppUser = async (req, res) => {
       "",
       "",
       "",
+      "",
+      "",
+      "",
       ""
     );
 
@@ -715,6 +725,14 @@ export const updateUser = async (req, res) => {
   delete body.email;
   delete body.appPinHash;
   delete body.password;
+
+  if (body.homeAddress != null || body.thana != null || body.district != null) {
+    body.shippingAddress = composeAddress(
+      body.homeAddress,
+      body.thana,
+      body.district
+    );
+  }
 
   const user = await userModel.findOneAndUpdate({ _id: id }, { ...body });
 

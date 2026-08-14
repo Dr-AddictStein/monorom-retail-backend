@@ -2,6 +2,13 @@ import siteDataModel from '../models/siteDataModel.js'; // Adjust this path if n
 import userModel from "../models/userModel.js";
 import productModel from "../models/productModel.js";
 
+export const CMS_PAGE_KEYS = [
+    "aboutUs",
+    "termsOfUse",
+    "privacyPolicy",
+    "cookiePolicy",
+];
+
 // Helper function to ensure site data exists
 const ensureSiteDataExists = async () => {
     let data = await siteDataModel.findOne({});
@@ -12,7 +19,11 @@ const ensureSiteDataExists = async () => {
             homeSlogan: "",
             homeSmallText: "",
             loginBanner: "",
-            signUpBanner: ""
+            signUpBanner: "",
+            aboutUs: "",
+            termsOfUse: "",
+            privacyPolicy: "",
+            cookiePolicy: "",
         });
     }
     return data;
@@ -121,5 +132,24 @@ export const updateSignUpBanner = async (req, res) => {
         return res.status(200).json(updatedData);
     } catch (error) {
         return res.status(500).json({ message: "Error updating SignUp Banner", error });
+    }
+};
+
+// Update CMS page HTML (About us, Terms, Privacy, Cookie)
+export const updatePageContent = async (req, res) => {
+    try {
+        const { pageKey, content } = req.body;
+        if (!CMS_PAGE_KEYS.includes(pageKey)) {
+            return res.status(400).json({ message: "Invalid page key" });
+        }
+        await ensureSiteDataExists();
+        const updatedData = await siteDataModel.findOneAndUpdate(
+            {},
+            { [pageKey]: content ?? "" },
+            { new: true }
+        );
+        return res.status(200).json(updatedData);
+    } catch (error) {
+        return res.status(500).json({ message: "Error updating page content", error });
     }
 };

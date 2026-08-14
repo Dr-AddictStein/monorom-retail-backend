@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { isUsablePhoneForOtp } from "../utils/phone.js";
+import { composeAddress } from "../utils/address.js";
 
 const userSchema = new mongoose.Schema({
   userName: {
@@ -37,6 +38,15 @@ const userSchema = new mongoose.Schema({
   shippingAddress: {
     type: String
   },
+  homeAddress: {
+    type: String
+  },
+  thana: {
+    type: String
+  },
+  district: {
+    type: String
+  },
   companyName: {
     type: String
   },
@@ -69,16 +79,18 @@ userSchema.statics.signup = async function (
   password,
   city,
   shippingAddress,
-  companyName, dob
+  companyName,
+  dob,
+  homeAddress,
+  thana,
+  district
 ) {
   const existU = await this.findOne({ userName });
 
-  console.log('req.body', userName, firstName,
-    lastName,
-    role,
-    phone,
-    password,
-    city, shippingAddress, dob);
+  const resolvedHome = String(homeAddress ?? "").trim() || String(shippingAddress ?? "").trim();
+  const resolvedThana = String(thana ?? "").trim();
+  const resolvedDistrict = String(district ?? "").trim();
+  const composedAddress = composeAddress(resolvedHome, resolvedThana, resolvedDistrict);
 
   if (existU) {
     throw Error("Username already taken.!.");
@@ -99,6 +111,9 @@ userSchema.statics.signup = async function (
   const isAppSignup =
     !String(city ?? "").trim() &&
     !String(shippingAddress ?? "").trim() &&
+    !resolvedHome &&
+    !resolvedThana &&
+    !resolvedDistrict &&
     !String(companyName ?? "").trim() &&
     !String(dob ?? "").trim();
 
@@ -110,7 +125,9 @@ userSchema.statics.signup = async function (
     if (
       !String(lastName ?? "").trim() ||
       !String(city ?? "").trim() ||
-      !String(shippingAddress ?? "").trim() ||
+      !resolvedHome ||
+      !resolvedThana ||
+      !resolvedDistrict ||
       !String(companyName ?? "").trim() ||
       !String(dob ?? "").trim()
     ) {
@@ -131,7 +148,15 @@ userSchema.statics.signup = async function (
     role,
     phone,
     password: hash,
-    city, shippingAddress, companyName, permission: false, userView: "FC", dob
+    city,
+    homeAddress: resolvedHome,
+    thana: resolvedThana,
+    district: resolvedDistrict,
+    shippingAddress: composedAddress,
+    companyName,
+    permission: false,
+    userView: "FC",
+    dob
   });
 
   return user;

@@ -2,16 +2,48 @@ import userModel from "../models/userModel.js";
 import productModel from '../models/productModel.js';
 import cartModel from "../models/cartModel.js";
 import orderModel from "../models/orderModel.js";
-import categoryModel from "../models/categoryModel.js";
-import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
-import bcrypt from "bcrypt";
+import { composeAddress } from "../utils/address.js";
 
+const DELIVERY_CHARGES = {
+    inside_dhaka: 80,
+    outside_dhaka: 120,
+};
 
 export const createOrder = async (req, res) => {
     try {
+        const {
+            homeAddress,
+            thana,
+            district,
+            deliveryPlace,
+            cartData = [],
+        } = req.body;
+
+        if (!["inside_dhaka", "outside_dhaka"].includes(deliveryPlace)) {
+            return res.status(400).json({ message: "Please select Inside Dhaka or Outside Dhaka." });
+        }
+        if (!String(homeAddress || "").trim() || !String(thana || "").trim() || !String(district || "").trim()) {
+            return res.status(400).json({ message: "Home address, thana and district are required." });
+        }
+
+        const deliveryCharge = DELIVERY_CHARGES[deliveryPlace];
+        const subtotal = (cartData || []).reduce(
+            (sum, item) => sum + Number(item.totalPrice || 0),
+            0
+        );
+        const address = composeAddress(homeAddress, thana, district);
+
         const data = {
-            ...req.body
+            ...req.body,
+            homeAddress: String(homeAddress).trim(),
+            thana: String(thana).trim(),
+            district: String(district).trim(),
+            deliveryPlace,
+            deliveryCharge,
+            subtotal,
+            address,
+            totalCost: Number((subtotal + deliveryCharge).toFixed(2)),
         };
 
         const newOrder = new orderModel(data);
@@ -82,6 +114,12 @@ export const getOrderDetailsByAdmin = async (req, res) => {
         phone: order.phone,
         email: order.email,
         shippingAddress: order.address,
+        homeAddress: order.homeAddress || "",
+        thana: order.thana || "",
+        district: order.district || "",
+        deliveryPlace: order.deliveryPlace || "",
+        deliveryCharge: order.deliveryCharge || 0,
+        subtotal: order.subtotal ?? order.totalCost,
         totalCost: order.totalCost,
         products: order.cartData,
         status: order.status,

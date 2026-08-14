@@ -11,6 +11,7 @@ import productRoutes from './routes/productRoutes.js';
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import siteDataRoutes from './routes/siteDataRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
 import pushNotificationRoutes from './routes/pushNotificationRoutes.js';
 import seedRoutes from './routes/seedRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
@@ -127,6 +128,9 @@ app.use("/api/order",orderRoutes);
 
 // siteData
 app.use("/api/siteData",siteDataRoutes);
+
+// blogs
+app.use("/api/blog",blogRoutes);
 
 // push notifications
 app.use("/api/notifications", pushNotificationRoutes);

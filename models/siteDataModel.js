@@ -19,6 +19,18 @@ const siteDataSchema = new mongoose.Schema({
     signUpBanner: {
         type: String 
     },
+    aboutUs: {
+        type: String
+    },
+    termsOfUse: {
+        type: String
+    },
+    privacyPolicy: {
+        type: String
+    },
+    cookiePolicy: {
+        type: String
+    },
 }, { timestamps: true });
 
 
