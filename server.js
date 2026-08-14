@@ -30,28 +30,43 @@ const app = express();
 // use of middlewares
 app.set("trust proxy", 1);
 
-// Reflect request Origin so Netlify + localhost browsers can call this API.
-// Optionally restrict with CORS_ORIGINS=https://monorom-retail.netlify.app,http://localhost:5173
-const corsOriginsEnv = process.env.CORS_ORIGINS?.split(",")
+// Always allow the shop domains. Extra origins can be added via CORS_ORIGINS.
+const defaultAllowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:4173",
+  "http://127.0.0.1:5173",
+  "https://monorom-retail.netlify.app",
+  "https://deliymug.com",
+  "https://www.deliymug.com",
+  "http://deliymug.com",
+  "http://www.deliymug.com",
+];
+
+const extraOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
   .map((o) => o.trim())
   .filter(Boolean);
 
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...extraOrigins])];
+
 app.use(
   cors({
-    origin: corsOriginsEnv?.length
-      ? (origin, callback) => {
-          if (!origin || corsOriginsEnv.includes(origin) || corsOriginsEnv.includes("*")) {
-            callback(null, true);
-            return;
-          }
-          callback(new Error(`Origin ${origin} not allowed by CORS`));
-        }
-      : true,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
     optionsSuccessStatus: 204,
   })
 );
+app.use((req, res, next) => {
+  res.set("Cache-Control", "no-store");
+  next();
+});
 app.use(express.json());
 
 app.use((req, res, next) => {
