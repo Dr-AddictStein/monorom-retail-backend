@@ -40,6 +40,10 @@ const defaultAllowedOrigins = [
   "https://www.deliymug.com",
   "http://deliymug.com",
   "http://www.deliymug.com",
+  "http://www.monoromstore.com",
+  "https://www.monoromstore.com",
+  "http://monoromstore.com",
+  "https://monoromstore.com",
 ];
 
 const extraOrigins = (process.env.CORS_ORIGINS || "")
