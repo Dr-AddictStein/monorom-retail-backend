@@ -41,8 +41,8 @@ const defaultAllowedOrigins = [
   "http://deliymug.com",
   "http://www.deliymug.com",
   "http://www.monoromstore.com",
-  "https://www.monoromstore.com",
   "http://monoromstore.com",
+  "https://www.monoromstore.com",
   "https://monoromstore.com",
 ];
 
