@@ -135,6 +135,26 @@ export const updateSignUpBanner = async (req, res) => {
     }
 };
 
+export const updateHomeSeo = async (req, res) => {
+    try {
+        await ensureSiteDataExists();
+        const updatedData = await siteDataModel.findOneAndUpdate(
+            {},
+            {
+                seoTitle: req.body.seoTitle ?? "",
+                seoDescription: req.body.seoDescription ?? "",
+                contactEmail: req.body.contactEmail ?? "",
+                contactPhone: req.body.contactPhone ?? "",
+                contactAddress: req.body.contactAddress ?? "",
+            },
+            { new: true }
+        );
+        return res.status(200).json(updatedData);
+    } catch (error) {
+        return res.status(500).json({ message: "Error updating homepage SEO", error });
+    }
+};
+
 // Update CMS page HTML (About us, Terms, Privacy, Cookie)
 export const updatePageContent = async (req, res) => {
     try {

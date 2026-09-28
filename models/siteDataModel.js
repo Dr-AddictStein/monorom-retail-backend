@@ -31,6 +31,26 @@ const siteDataSchema = new mongoose.Schema({
     cookiePolicy: {
         type: String
     },
+    seoTitle: {
+        type: String,
+        default: "",
+    },
+    seoDescription: {
+        type: String,
+        default: "",
+    },
+    contactEmail: {
+        type: String,
+        default: "",
+    },
+    contactPhone: {
+        type: String,
+        default: "",
+    },
+    contactAddress: {
+        type: String,
+        default: "",
+    },
 }, { timestamps: true });
 
 

@@ -1,5 +1,5 @@
 import express from 'express';
-import { getSiteData, updateHomeBanner, updateHomeSlogan, updateHomeSmallText, updateLoginBanner, updateLogo, updatePageContent, updateSignUpBanner } from '../controllers/siteDataController.js';
+import { getSiteData, updateHomeBanner, updateHomeSeo, updateHomeSlogan, updateHomeSmallText, updateLoginBanner, updateLogo, updatePageContent, updateSignUpBanner } from '../controllers/siteDataController.js';
 
 
 
@@ -17,6 +17,7 @@ router.patch('/updateHomeSmallText',updateHomeSmallText);
 router.patch('/updateSignUpBanner',updateSignUpBanner);
 router.patch('/updateloginBanner',updateLoginBanner);
 router.patch('/updatePageContent',updatePageContent);
+router.patch('/updateHomeSeo',updateHomeSeo);
 
 
 
