@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import productModel from "../models/productModel.js";
-import { ensureUniqueSlug, slugify } from "../utils/slugify.js";
+import {
+  assertSlugAvailable,
+  slugConflictBody,
+  slugify,
+} from "../utils/slugify.js";
 
 const findProductBySlugOrId = async (param) => {
   if (mongoose.Types.ObjectId.isValid(param)) {
@@ -42,9 +46,9 @@ export const getProductsByCategoryId = async (req, res) => {
 
 export const createProduct = async (req, res) => {
   try {
-    const baseSlug =
+    const slug =
       slugify(req.body.slug) || slugify(req.body.name) || "product";
-    const slug = await ensureUniqueSlug(productModel, baseSlug);
+    await assertSlugAvailable(productModel, slug, null, "product");
 
     const newProduct = new productModel({
       ...req.body,
@@ -53,6 +57,8 @@ export const createProduct = async (req, res) => {
     const savedProduct = await newProduct.save();
     res.status(201).json(savedProduct);
   } catch (error) {
+    const conflict = slugConflictBody(error, "product");
+    if (conflict) return res.status(409).json(conflict);
     console.error("Error saving product:", error);
     res.status(500).json({ message: error.message });
   }
@@ -68,11 +74,12 @@ export const updateProduct = async (req, res) => {
     const updates = { ...req.body };
 
     if (updates.slug != null || updates.name != null) {
-      const baseSlug =
+      const slug =
         slugify(updates.slug) ||
         slugify(updates.name) ||
         "product";
-      updates.slug = await ensureUniqueSlug(productModel, baseSlug, id);
+      await assertSlugAvailable(productModel, slug, id, "product");
+      updates.slug = slug;
     }
 
     const product = await productModel.findOneAndUpdate(
@@ -87,6 +94,8 @@ export const updateProduct = async (req, res) => {
       return res.status(400).json({ error: "No Such Product Found.!." });
     }
   } catch (error) {
+    const conflict = slugConflictBody(error, "product");
+    if (conflict) return res.status(409).json(conflict);
     console.error("Error updating product:", error);
     res.status(500).json({ message: error.message });
   }

@@ -10,22 +10,65 @@ export function slugify(text) {
     .replace(/^-+|-+$/g, "");
 }
 
-/**
- * Return a slug that is unique on the given model.
- * If `baseSlug` is taken, appends -2, -3, …
- */
-export async function ensureUniqueSlug(Model, baseSlug, excludeId = null) {
-  const root = baseSlug || "item";
-  let candidate = root;
-  let n = 2;
-
-  while (true) {
-    const query = { slug: candidate };
-    if (excludeId) {
-      query._id = { $ne: excludeId };
-    }
-    const exists = await Model.findOne(query).select("_id").lean();
-    if (!exists) return candidate;
-    candidate = `${root}-${n++}`;
+export class SlugConflictError extends Error {
+  constructor(entityLabel, slug, existingName = "") {
+    const who = existingName
+      ? `A ${entityLabel} named "${existingName}"`
+      : `Another ${entityLabel}`;
+    super(
+      `${who} already uses the slug "${slug}". Please choose a different slug.`
+    );
+    this.name = "SlugConflictError";
+    this.code = "SLUG_CONFLICT";
+    this.status = 409;
+    this.slug = slug;
   }
+}
+
+/**
+ * Reject the slug when another document on this model already uses it.
+ * `excludeId` skips the record being edited so saving the same slug is allowed.
+ */
+export async function assertSlugAvailable(
+  Model,
+  slug,
+  excludeId = null,
+  entityLabel = "item"
+) {
+  const query = { slug };
+  if (excludeId) {
+    query._id = { $ne: excludeId };
+  }
+
+  const existing = await Model.findOne(query).select("name title").lean();
+  if (!existing) return slug;
+
+  const existingName = existing.name || existing.title || "";
+  throw new SlugConflictError(entityLabel, slug, existingName);
+}
+
+/** 409 body for an explicit conflict or a Mongo duplicate-key race. */
+export function slugConflictBody(error, entityLabel = "item") {
+  if (error instanceof SlugConflictError || error?.code === "SLUG_CONFLICT") {
+    return {
+      message: error.message,
+      code: "SLUG_CONFLICT",
+      slug: error.slug || "",
+    };
+  }
+
+  const duplicateSlug =
+    error?.code === 11000 &&
+    (error.keyPattern?.slug != null || error.keyValue?.slug != null);
+
+  if (!duplicateSlug) return null;
+
+  const slug = error.keyValue?.slug || "";
+  return {
+    message: slug
+      ? `Another ${entityLabel} already uses the slug "${slug}". Please choose a different slug.`
+      : `Another ${entityLabel} already uses this slug. Please choose a different slug.`,
+    code: "SLUG_CONFLICT",
+    slug,
+  };
 }

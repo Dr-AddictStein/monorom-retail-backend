@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import blogModel from "../models/blogModel.js";
-import { ensureUniqueSlug, slugify } from "../utils/slugify.js";
+import {
+  assertSlugAvailable,
+  slugConflictBody,
+  slugify,
+} from "../utils/slugify.js";
 import { stripHtml } from "../utils/html.js";
 
 const excerptFromContent = (excerpt, content) => {
@@ -59,11 +63,11 @@ export const createBlog = async (req, res) => {
     }
 
     const baseSlug = slugify(slug) || slugify(title) || "blog";
-    const uniqueSlug = await ensureUniqueSlug(blogModel, baseSlug);
+    await assertSlugAvailable(blogModel, baseSlug, null, "blog");
 
     const saved = await blogModel.create({
       title: String(title).trim(),
-      slug: uniqueSlug,
+      slug: baseSlug,
       excerpt: excerptFromContent(excerpt, content),
       coverImage: coverImage || "",
       content: content || "",
@@ -72,6 +76,8 @@ export const createBlog = async (req, res) => {
 
     return res.status(201).json(saved);
   } catch (error) {
+    const conflict = slugConflictBody(error, "blog");
+    if (conflict) return res.status(409).json(conflict);
     console.error("Error creating blog:", error);
     return res.status(500).json({ message: error.message });
   }
@@ -103,7 +109,8 @@ export const updateBlog = async (req, res) => {
         slugify(updates.title) ||
         slugify(existing.title) ||
         "blog";
-      updates.slug = await ensureUniqueSlug(blogModel, baseSlug, id);
+      await assertSlugAvailable(blogModel, baseSlug, id, "blog");
+      updates.slug = baseSlug;
     }
 
     if (updates.excerpt != null || updates.content != null) {
@@ -116,6 +123,8 @@ export const updateBlog = async (req, res) => {
     const blog = await blogModel.findByIdAndUpdate(id, updates, { new: true });
     return res.status(200).json(blog);
   } catch (error) {
+    const conflict = slugConflictBody(error, "blog");
+    if (conflict) return res.status(409).json(conflict);
     console.error("Error updating blog:", error);
     return res.status(500).json({ message: error.message });
   }

@@ -1,7 +1,11 @@
 import mongoose from "mongoose";
 import categoryModel from "../models/categoryModel.js";
 import productModel from "../models/productModel.js";
-import { ensureUniqueSlug, slugify } from "../utils/slugify.js";
+import {
+  assertSlugAvailable,
+  slugConflictBody,
+  slugify,
+} from "../utils/slugify.js";
 
 const findCategoryBySlugOrId = async (param) => {
   if (mongoose.Types.ObjectId.isValid(param)) {
@@ -41,14 +45,16 @@ export const createCategory = async (req, res) => {
         .json({ message: "Slug must contain letters or numbers." });
     }
 
-    const slug = await ensureUniqueSlug(categoryModel, baseSlug);
+    await assertSlugAvailable(categoryModel, baseSlug, null, "category");
     const newCategory = new categoryModel({
       ...req.body,
-      slug,
+      slug: baseSlug,
     });
     const savedCategory = await newCategory.save();
     res.status(201).json(savedCategory);
   } catch (error) {
+    const conflict = slugConflictBody(error, "category");
+    if (conflict) return res.status(409).json(conflict);
     console.error("Error saving category:", error);
     res.status(500).json({ message: error.message });
   }
@@ -70,7 +76,8 @@ export const updateCategory = async (req, res) => {
           .status(400)
           .json({ message: "Slug must contain letters or numbers." });
       }
-      updates.slug = await ensureUniqueSlug(categoryModel, baseSlug, id);
+      await assertSlugAvailable(categoryModel, baseSlug, id, "category");
+      updates.slug = baseSlug;
     }
 
     const category = await categoryModel.findOneAndUpdate(
@@ -85,6 +92,8 @@ export const updateCategory = async (req, res) => {
       return res.status(400).json({ error: "No Such Category Found.!." });
     }
   } catch (error) {
+    const conflict = slugConflictBody(error, "category");
+    if (conflict) return res.status(409).json(conflict);
     console.error("Error updating category:", error);
     res.status(500).json({ message: error.message });
   }
