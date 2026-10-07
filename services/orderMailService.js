@@ -30,25 +30,40 @@ const formatWhen = (date) => {
   });
 };
 
-let transporter;
+const unquote = (value) =>
+  String(value ?? "")
+    .trim()
+    .replace(/^["']|["']$/g, "")
+    .trim();
 
-const getTransporter = () => {
-  if (transporter) return transporter;
+// Google shows app passwords in groups of four. SMTP accepts only the 16 letters.
+const normalizeAppPassword = (value) => unquote(value).replace(/\s+/g, "");
 
-  const user = process.env.SMTP_USER;
-  const pass = String(process.env.SMTP_PASS || "").replace(/\s+/g, "");
+const createTransporter = () => {
+  const user = unquote(process.env.SMTP_USER);
+  const pass = normalizeAppPassword(process.env.SMTP_PASS);
   if (!user || !pass) {
-    throw new Error("SMTP_USER and SMTP_PASS must be set to send order emails");
+    const present = ["SMTP_USER", "SMTP_PASS", "ADMIN_EMAIL"]
+      .map((key) => `${key}=${process.env[key] ? "set" : "missing"}`)
+      .join(", ");
+    throw new Error(
+      `SMTP credentials are not available in this environment (${present}). Add them in the Vercel project settings for the backend, then redeploy.`
+    );
   }
 
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: String(process.env.SMTP_PORT || 465) !== "587",
-    auth: { user, pass },
-  });
+  const port = Number(process.env.SMTP_PORT || 465);
 
-  return transporter;
+  return nodemailer.createTransport({
+    host: unquote(process.env.SMTP_HOST) || "smtp.gmail.com",
+    port,
+    secure: port !== 587,
+    auth: { user, pass },
+    // Vercel often hangs on IPv6 to smtp.gmail.com. Force IPv4 and fail fast.
+    family: 4,
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 10000,
+  });
 };
 
 const buildSubject = (order) => {
@@ -219,18 +234,25 @@ const buildText = (order) => {
 };
 
 export async function sendNewOrderEmail(order) {
-  const to = process.env.ADMIN_EMAIL || process.env.SMTP_USER;
+  const user = unquote(process.env.SMTP_USER);
+  const to = unquote(process.env.ADMIN_EMAIL) || user;
   if (!to) {
     throw new Error("ADMIN_EMAIL is not set");
   }
 
-  const from = process.env.SMTP_FROM || `"Monorom Crockery" <${process.env.SMTP_USER}>`;
+  const from = unquote(process.env.SMTP_FROM) || `"Monorom Crockery" <${user}>`;
+  const transport = createTransporter();
 
-  await getTransporter().sendMail({
-    from,
-    to,
-    subject: buildSubject(order),
-    text: buildText(order),
-    html: buildHtml(order),
-  });
+  try {
+    const info = await transport.sendMail({
+      from,
+      to,
+      subject: buildSubject(order),
+      text: buildText(order),
+      html: buildHtml(order),
+    });
+    console.log("Order email sent:", info.messageId);
+  } finally {
+    transport.close();
+  }
 }
