@@ -4,6 +4,7 @@ import cartModel from "../models/cartModel.js";
 import orderModel from "../models/orderModel.js";
 import mongoose from "mongoose";
 import { composeAddress } from "../utils/address.js";
+import { sendNewOrderEmail } from "../services/orderMailService.js";
 
 const DELIVERY_CHARGES = {
     inside_dhaka: 80,
@@ -68,6 +69,12 @@ export const createOrder = async (req, res) => {
             while (cnt--) {
                 await cartModel.findOneAndDelete({ userId: req.body.userId });
             }
+        }
+
+        try {
+            await sendNewOrderEmail(savedOrder);
+        } catch (mailError) {
+            console.error("Order saved, but admin email failed:", mailError);
         }
 
         return res.status(200).json(savedOrder);
