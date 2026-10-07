@@ -71,13 +71,21 @@ export const createOrder = async (req, res) => {
             }
         }
 
+        let emailSent = false;
+        let emailError = "";
         try {
             await sendNewOrderEmail(savedOrder);
+            emailSent = true;
         } catch (mailError) {
-            console.error("Order saved, but admin email failed:", mailError);
+            emailError = mailError?.message || "Admin email failed";
+            console.error("Order saved, but admin email failed:", emailError);
         }
 
-        return res.status(200).json(savedOrder);
+        return res.status(200).json({
+            ...savedOrder.toObject(),
+            emailSent,
+            emailError,
+        });
     } catch (error) {
         console.error("Error creating order:", error);
         return res.status(500).json({ message: error.message });

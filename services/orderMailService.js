@@ -1,4 +1,24 @@
+import dotenv from "dotenv";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 import nodemailer from "nodemailer";
+
+const backendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+
+// Vercel does not inject a gitignored .env unless the function bundle includes it.
+const loadLocalEnv = () => {
+  const envPath = path.join(backendRoot, ".env");
+  if (!fs.existsSync(envPath)) return;
+  const parsed = dotenv.parse(fs.readFileSync(envPath));
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!String(process.env[key] ?? "").trim()) {
+      process.env[key] = value;
+    }
+  }
+};
+
+loadLocalEnv();
 
 const escapeHtml = (value) =>
   String(value ?? "")
@@ -240,18 +260,23 @@ export async function sendNewOrderEmail(order) {
     throw new Error("ADMIN_EMAIL is not set");
   }
 
-  const from = unquote(process.env.SMTP_FROM) || `"Monorom Crockery" <${user}>`;
   const transport = createTransporter();
 
   try {
     const info = await transport.sendMail({
-      from,
+      from: {
+        name: "Monorom Crockery",
+        address: user,
+      },
       to,
-      subject: buildSubject(order),
+      subject: buildSubject(order).replace(/[\r\n]+/g, " "),
       text: buildText(order),
       html: buildHtml(order),
     });
-    console.log("Order email sent:", info.messageId);
+    if (info.rejected?.length) {
+      throw new Error(`Gmail rejected the admin email for ${info.rejected.join(", ")}`);
+    }
+    console.log("Order email sent:", info.messageId, "accepted:", info.accepted);
   } finally {
     transport.close();
   }
